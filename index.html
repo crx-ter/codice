@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#05060a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Códice">
+<title>CÓDICE | Learning OS v9</title>
+
+<!-- MathJax -->
+<script>
+window.MathJax = {
+  tex: { inlineMath:[['$','$'],['\\(','\\)']], displayMath:[['$$','$$'],['\\[','\\]']], processEscapes:true },
+  options: { skipHtmlTags:['script','noscript','style','textarea'] },
+  startup: { typeset:false }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+
+<!-- Mermaid -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&family=Mulish:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+
+<!-- Stylesheets — orden importa -->
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/ai-panel.css">
+<link rel="stylesheet" href="css/premium.css">
+</head>
+<body>
+
+
+
+<!-- ══════════════════════════════════════════
+     MODULE SELECTOR — Pantalla de inicio
+══════════════════════════════════════════ -->
+<div id="moduleSelector">
+  <div class="ms-inner">
+    <div class="ms-header">
+      <div class="ms-logo">CÓDICE</div>
+      <div class="ms-subtitle">Learning OS — Sistema de Aprendizaje Adaptativo</div>
+      <div class="ms-badges">
+        <span class="ms-badge">⚡ Offline-first</span>
+        <span class="ms-badge">📚 Multi-Módulo</span>
+        <span class="ms-badge">🧠 IA Adaptativa</span>
+        <span class="ms-badge">📅 Horarios</span>
+        <span class="ms-badge">v9.0</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="ms-section-label" style="margin:0">Tus Módulos</div>
+      <button class="btn btn-gold" onclick="openM('mModulo')" style="font-size:12px;padding:7px 16px">+ Nuevo Módulo</button>
+    </div>
+    <div class="ms-grid" id="moduleGrid"></div>
+    <div style="text-align:center;margin-top:auto;padding-top:24px;color:var(--txt4);font-size:12px;">
+      Cada módulo es independiente con sus propias clases, horarios y progreso
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     APP CONTAINER — Layout principal
+══════════════════════════════════════════ -->
+<div id="appContainer" class="hidden">
+
+  <!-- Overlay del sidebar (mobile) -->
+  <div id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  <!-- ── SIDEBAR ── -->
+  <aside id="sidebar">
+    <div class="sb-head">
+      <div class="sb-mod-btn" onclick="showModuleSelector()">
+        <div class="sb-mod-icon" id="curModIcon">📚</div>
+        <div class="sb-mod-info">
+          <div class="sb-mod-name" id="curModName">Cargando...</div>
+          <div class="sb-mod-type" id="curModType">—</div>
+        </div>
+        <div class="sb-mod-arrow">⌄</div>
+      </div>
+      <div class="sb-logo">CÓDICE</div>
+      <div class="sb-version">Learning OS v9.0</div>
+    </div>
+    <nav class="sb-nav" id="sbNav"></nav>
+    <div class="sb-list" id="sbList"></div>
+    <div class="sb-foot">
+      <div class="sb-theme-btn" onclick="toggleTheme()">
+        <span id="themeIcon">🌙</span><span id="themeLabel">Modo Oscuro</span>
+      </div>
+      <div class="sb-status">
+        <div class="sb-status-dot" id="sbStatusDot"></div>
+        <div id="statusTxt">Auto-guardado activo</div>
+      </div>
+      <div class="sb-btns">
+        <div class="sb-btn" onclick="saveHTML()">💾 Guardar</div>
+        <div class="sb-btn" id="sbAuthBtn" onclick="toggleAuthPanel()" title="Cuenta / Sync">👤</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <main id="main">
+    <div id="topbar">
+      <div class="topbar-burger" onclick="toggleSidebar()">
+        <span></span><span></span><span></span>
+      </div>
+      <div class="topbar-title">CÓDICE</div>
+      <div class="topbar-view-name" id="topbarViewName">Inicio</div>
+    </div>
+    <div id="viewport"></div>
+  </main>
+
+</div><!-- /appContainer -->
+
+<!-- ── CRONÓMETRO (examen clásico) ── -->
+<div id="cronometro">
+  <div class="crono-label">Tiempo restante</div>
+  <div class="crono-time" id="cronoTxt">00:00</div>
+</div>
+
+<!-- ── TOAST NOTIFICATIONS ── -->
+<div id="toastCont"></div>
+
+<!-- ── NOTAS RÁPIDAS ── -->
+<!-- ══ CHAT IA (reemplaza Notas Rápidas) ══ -->
+<div id="globalNotesBtn" onclick="toggleGlobalNotes()" title="Chat IA 🤖" style="background:linear-gradient(135deg,#7c3aed,#4f46e5)">🤖</div>
+
+<div id="globalNotesPanel">
+  <!-- HEADER -->
+  <div class="gn-head">
+    <div class="gn-title">
+      <div class="ai-avatar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a4 4 0 0 1 4 4 4 4 0 0 1-1.5 3.1A4 4 0 1 1 8 9.1 4 4 0 0 1 12 2z"/>
+          <path d="M12 10v4M9 22h6M10 18h4M7 12H5a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h1M17 12h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-1"/>
+        </svg>
+        <div class="ai-status-dot"></div>
+      </div>
+      <div>
+        <div class="gn-name">Códice IA</div>
+        <div class="gn-sub" id="aiStatus">Asistente de estudio</div>
+        <div id="aiPathDisplay">Códice</div>
+      </div>
+    </div>
+    <div class="gn-actions">
+      <div class="gn-action-btn" onclick="openAISettings()" title="Configurar API">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      </div>
+      <div class="gn-action-btn" onclick="clearAIChat()" title="Nueva conversación">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.17"/></svg>
+      </div>
+      <div class="gn-close" onclick="toggleGlobalNotes()">&#215;</div>
+    </div>
+  </div>
+  <!-- MEMORY CHIPS -->
+  <div id="aiMemoryBar" style="display:none"></div>
+  <!-- MENSAJES -->
+  <div id="aiChatMessages">
+    <div class="ai-msg ai-msg-bot">
+      <div class="ai-bubble ai-bubble-bot">
+        👋 Hola, soy <strong>Códice IA</strong>.<br><br>
+        Puedo <strong>crear</strong> clases y bloques, <strong>generar</strong> quizzes, <strong>explicar</strong> temas, crear <strong>diagramas</strong> y hacer <strong>diagnósticos</strong> de la app.<br><br>
+        <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:5px">
+          <span style="background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.25);border-radius:8px;padding:3px 9px;font-size:11px;color:#a78bfa;cursor:pointer" onclick="document.getElementById('aiChatInput').value='diagnóstico rápido';sendAIMessage()">🔬 diag rápido</span>
+          <span style="background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.25);border-radius:8px;padding:3px 9px;font-size:11px;color:#a78bfa;cursor:pointer" onclick="document.getElementById('aiChatInput').value='diagnóstico completo';sendAIMessage()">🧠 diag completo</span>
+          <span style="background:rgba(199,154,56,.08);border:1px solid rgba(199,154,56,.25);border-radius:8px;padding:3px 9px;font-size:11px;color:var(--goldL,#c79a38);cursor:pointer" onclick="document.getElementById('aiChatInput').value='diagnóstico';sendAIMessage()">🔧 test modelos</span>
+          <span style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);border-radius:8px;padding:3px 9px;font-size:11px;color:#4ade80;cursor:pointer" onclick="document.getElementById('aiChatInput').value='crea un diagrama de flujo de ejemplo';sendAIMessage()">📊 diagrama</span>
+        </div>
+      </div>
+      <div class="ai-time">Ahora</div>
+    </div>
+  </div>
+  <!-- INPUT -->
+  <div id="aiInputArea">
+    <div id="aiApiWarning" style="display:none">&#9888;&#65039; Configura tu API Key en &#9881;&#65039;</div>
+    <div class="ai-input-row">
+      <textarea id="aiChatInput" placeholder="Pregunta algo... (Enter para enviar)"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAIMessage()}"
+        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,110)+'px'"></textarea>
+      <button onclick="sendAIMessage()" id="aiSendBtn" title="Enviar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+    <div class="ai-hint">Shift+Enter para nueva línea</div>
+  </div>
+</div>
+<button id="aiFab" onclick="toggleGlobalNotes()" aria-label="Abrir IA">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 2a4 4 0 0 1 4 4 4 4 0 0 1-1.5 3.1A4 4 0 1 1 8 9.1 4 4 0 0 1 12 2z"/>
+    <path d="M12 10v4M9 22h6M10 18h4M7 12H5a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h1M17 12h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-1"/>
+  </svg>
+  <div class="fab-badge"></div>
+</button>
+
+<!-- Modal: Configurar IA -->
+<!-- AI Settings handled by caiOpenSettings() in codice-ai-engine.js -->
+<!-- Stub modal kept for backward compat with openM('mAISettings') calls -->
+<div class="modal" id="mAISettings" style="display:none"></div>
+
+<!-- Modal: Quiz con IA -->
+<div class="modal" id="mAIQuiz">
+  <div class="m-box" style="max-width:520px">
+    <div class="m-head">
+      <div class="m-title">🤖 Generar Quiz con IA</div>
+      <div class="m-close" onclick="closeM('mAIQuiz')">×</div>
+    </div>
+    <div class="m-body">
+      <div class="m-field">
+        <label class="m-label">¿Sobre qué quieres el quiz?</label>
+        <textarea class="m-textarea" id="aiQuizPrompt" rows="3"
+          placeholder="Ejemplos:&#10;• Crea un quiz sobre derivadas&#10;• Encuentra la ecuación de la recta por A(1,3) y B(2,6)&#10;• Quiz sobre el bloque que acabo de leer"></textarea>
+      </div>
+      <div class="m-field">
+        <label class="m-label">Contexto del bloque (se usa automáticamente)</label>
+        <textarea class="m-textarea" id="aiQuizContext" rows="2"
+          placeholder="Contenido del bloque actual..." style="font-size:11px;color:var(--txt3)"></textarea>
+      </div>
+      <div id="aiQuizResult" style="display:none;margin-bottom:12px"></div>
+      <div class="m-actions" style="flex-wrap:wrap;gap:8px">
+        <button class="btn" onclick="closeM('mAIQuiz')">Cancelar</button>
+        <button class="btn btn-b" id="aiQuizGenBtn" onclick="generateAIQuiz()">🤖 Generar Quiz</button>
+        <button class="btn btn-g" onclick="saveAIQuiz()" id="aiQuizSaveBtn" style="display:none">✓ Usar este Quiz</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODALES
+══════════════════════════════════════════ -->
+
+<!-- Modal: Crear Módulo -->
+<div class="modal" id="mModulo">
+  <div class="m-box">
+    <div class="m-head">
+      <div class="m-title">🆕 Crear Módulo</div>
+      <div class="m-close" onclick="closeM('mModulo')">×</div>
+    </div>
+    <div class="m-body">
+      <div class="m-field">
+        <label class="m-label">Nombre</label>
+        <input type="text" class="m-input" id="mMN" placeholder="Ej: Matemáticas 2025" autocomplete="off">
+      </div>
+      <div class="m-field">
+        <label class="m-label">Tipo</label>
+        <div class="module-type-grid" id="modTypeGrid">
+          <div class="mto on" data-type="general"   onclick="pickModType(this)"><div class="mto-icon">📚</div><div class="mto-name">General</div></div>
+          <div class="mto"    data-type="math"      onclick="pickModType(this)"><div class="mto-icon">🧮</div><div class="mto-name">Matemáticas</div></div>
+          <div class="mto"    data-type="chemistry" onclick="pickModType(this)"><div class="mto-icon">🧪</div><div class="mto-name">Química</div></div>
+          <div class="mto"    data-type="theory"    onclick="pickModType(this)"><div class="mto-icon">🌍</div><div class="mto-name">Teoría</div></div>
+          <div class="mto"    data-type="language"  onclick="pickModType(this)"><div class="mto-icon">🌐</div><div class="mto-name">Idiomas</div></div>
+          <div class="mto"    data-type="physics"   onclick="pickModType(this)"><div class="mto-icon">⚛️</div><div class="mto-name">Física</div></div>
+        </div>
+      </div>
+      <div class="m-field">
+        <label class="m-label">Modo de Horario</label>
+        <div class="schedule-mode-pick">
+          <div class="smp on" data-mode="single"   onclick="pickModuleSchedMode(this)">
+            <div class="smp-icon">📆</div><div class="smp-name">Horario Único</div>
+            <div class="smp-desc">Un solo horario semanal fijo</div>
+          </div>
+          <div class="smp"    data-mode="multiple" onclick="pickModuleSchedMode(this)">
+            <div class="smp-icon">🔄</div><div class="smp-name">Horarios Múltiples</div>
+            <div class="smp-desc">Divisiones con horarios alternos</div>
+          </div>
+        </div>
+      </div>
+      <div class="m-actions">
+        <button class="btn" onclick="closeM('mModulo')">Cancelar</button>
+        <button class="btn btn-primary" onclick="createModulo()">✓ Crear Módulo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nueva Clase -->
+<div class="modal" id="mClase">
+  <div class="m-box">
+    <div class="m-head">
+      <div class="m-title">📘 Nueva Clase</div>
+      <div class="m-close" onclick="closeM('mClase')">×</div>
+    </div>
+    <div class="m-body">
+      <div class="m-field">
+        <label class="m-label">Nombre</label>
+        <input type="text" class="m-input" id="mCN" placeholder="Ej: Álgebra Lineal" autocomplete="off">
+      </div>
+      <div class="m-field">
+        <label class="m-label">Color</label>
+        <div class="m-color-picker">
+          <div class="cdot on" style="background:#c79a38" data-c="#c79a38" onclick="pickC(this)"></div>
+          <div class="cdot"    style="background:#2868cc" data-c="#2868cc" onclick="pickC(this)"></div>
+          <div class="cdot"    style="background:#28985e" data-c="#28985e" onclick="pickC(this)"></div>
+          <div class="cdot"    style="background:#7240cc" data-c="#7240cc" onclick="pickC(this)"></div>
+          <div class="cdot"    style="background:#c06020" data-c="#c06020" onclick="pickC(this)"></div>
+          <div class="cdot"    style="background:#b83050" data-c="#b83050" onclick="pickC(this)"></div>
+          <div class="cdot"    style="background:#20a0c0" data-c="#20a0c0" onclick="pickC(this)"></div>
+        </div>
+      </div>
+      <div class="m-actions">
+        <button class="btn" onclick="closeM('mClase')">Cancelar</button>
+        <button class="btn btn-gold" onclick="saveClase()">✓ Crear Clase</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nuevo Examen (código) -->
+<div class="modal" id="mExamen">
+  <div class="m-box" style="max-width:480px">
+    <div class="m-head">
+      <div class="m-title">📝 Nuevo Examen</div>
+      <div class="m-close" onclick="closeM('mExamen')">×</div>
+    </div>
+    <div class="m-body">
+      <div class="m-field">
+        <label class="m-label">Título</label>
+        <input type="text" class="m-input" id="mEN" placeholder="Ej: Tarea Python #1" autocomplete="off">
+      </div>
+      <div class="m-field">
+        <label class="m-label">Fecha (opcional)</label>
+        <input type="date" class="m-input" id="mEDate">
+      </div>
+      <div class="m-field">
+        <label class="m-label">Tipo de examen</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
+          <div class="mto on" data-etype="python" onclick="pickExamType(this)" style="padding:16px;text-align:center">
+            <div style="font-size:28px;margin-bottom:6px">🐍</div>
+            <div style="font-weight:700;color:var(--txt);font-size:13px">Python</div>
+            <div style="font-size:11px;color:var(--txt3);margin-top:3px">Editor + simulador</div>
+          </div>
+          <div class="mto"    data-etype="html"   onclick="pickExamType(this)" style="padding:16px;text-align:center">
+            <div style="font-size:28px;margin-bottom:6px">🌐</div>
+            <div style="font-weight:700;color:var(--txt);font-size:13px">HTML</div>
+            <div style="font-size:11px;color:var(--txt3);margin-top:3px">Editor + vista previa</div>
+          </div>
+        </div>
+      </div>
+      <div class="m-actions">
+        <button class="btn" onclick="closeM('mExamen')">Cancelar</button>
+        <button class="btn btn-gold" onclick="saveExamen()">✓ Crear</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Registrar Sesión -->
+<div class="modal" id="mSesion">
+  <div class="m-box">
+    <div class="m-head">
+      <div class="m-title">⏱️ Registrar Sesión</div>
+      <div class="m-close" onclick="closeM('mSesion')">×</div>
+    </div>
+    <div class="m-body">
+      <div class="m-field">
+        <label class="m-label">Temas estudiados</label>
+        <input type="text" class="m-input" id="mST" placeholder="Ej: Derivadas, Límites" autocomplete="off">
+      </div>
+      <div class="m-field">
+        <label class="m-label">Duración (minutos)</label>
+        <input type="number" class="m-input" id="mSD" value="60" min="1">
+      </div>
+      <div class="m-field">
+        <label class="m-label">Notas (opcional)</label>
+        <textarea class="m-textarea" id="mSN" placeholder="Apuntes..."></textarea>
+      </div>
+      <div class="m-actions">
+        <button class="btn" onclick="closeM('mSesion')">Cancelar</button>
+        <button class="btn btn-gold" onclick="saveSesion()">✓ Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nueva Pregunta (examen clásico) -->
+<div class="modal" id="mPregunta">
+  <div class="m-box">
+    <div class="m-head">
+      <div class="m-title">❓ Nueva Pregunta</div>
+      <div class="m-close" onclick="closeM('mPregunta')">×</div>
+    </div>
+    <div class="m-body">
+      <div class="m-field"><label class="m-label">Pregunta</label><textarea class="m-textarea" id="pPregunta" placeholder="Escribe la pregunta..."></textarea></div>
+      <div class="m-field"><label class="m-label">Opción A</label><input type="text" class="m-input" id="pOp0" autocomplete="off"></div>
+      <div class="m-field"><label class="m-label">Opción B</label><input type="text" class="m-input" id="pOp1" autocomplete="off"></div>
+      <div class="m-field"><label class="m-label">Opción C</label><input type="text" class="m-input" id="pOp2" autocomplete="off"></div>
+      <div class="m-field"><label class="m-label">Opción D</label><input type="text" class="m-input" id="pOp3" autocomplete="off"></div>
+      <div class="m-field">
+        <label class="m-label">Respuesta correcta</label>
+        <select class="m-input" id="pCorrecta">
+          <option value="0">A</option><option value="1">B</option>
+          <option value="2">C</option><option value="3">D</option>
+        </select>
+      </div>
+      <div class="m-actions">
+        <button class="btn" onclick="closeM('mPregunta')">Cancelar</button>
+        <button class="btn btn-gold" onclick="savePregunta()">✓ Agregar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Quiz de bloque -->
+<div class="modal" id="mQuiz">
+  <div class="m-box" style="max-width:540px">
+    <div class="m-head">
+      <div class="m-title">🎯 Quiz — Ingresa tu JSON</div>
+      <div class="m-close" onclick="closeM('mQuiz')">×</div>
+    </div>
+    <div class="m-body">
+      <p style="font-size:12px;color:var(--txt3);margin-bottom:10px">Pega el JSON de tu quiz (una o varias preguntas) y haz clic en <strong>Iniciar Quiz</strong> o <strong>Guardar en bloque</strong>.</p>
+      <pre style="background:var(--card2);border:1px solid var(--brd);border-radius:8px;padding:10px;font-size:11px;color:var(--txt3);overflow-x:auto;margin-bottom:10px;white-space:pre">[
+  {
+    "pregunta": "¿Ejemplo?",
+    "opciones": ["A","B","C","D"],
+    "correcta": 0,
+    "explicacion": "Texto explicativo..."
+  }
+]</pre>
+      <div class="m-field">
+        <label class="m-label">JSON del Quiz</label>
+        <textarea class="m-textarea" id="qzJsonArea" rows="8" spellcheck="false" style="font-family:monospace;font-size:12px" placeholder='[ { "pregunta": "...", "opciones": ["A","B","C","D"], "correcta": 0 } ]'></textarea>
+      </div>
+      <div id="qzModalErr" style="display:none;padding:8px 12px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:6px;color:#f87171;font-size:12px;margin-bottom:10px"></div>
+      <div class="m-actions">
+        <button class="btn" onclick="closeM('mQuiz')">Cancelar</button>
+        <button class="btn" onclick="_mqzGuardar()" style="border-color:var(--goldBd);color:var(--goldL)">💾 Guardar</button>
+        <button class="btn btn-gold" onclick="_mqzLanzar()">🚀 Iniciar Quiz</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Horario / Editar tabla de división -->
+<div class="modal" id="mHorario">
+  <div class="m-box" style="max-width:760px;width:96vw">
+    <div class="m-head">
+      <div class="m-title" id="mHorarioTitle">📅 Editar Horario</div>
+      <div class="m-close" onclick="closeM('mHorario')">×</div>
+    </div>
+    <div class="m-body">
+      <div id="mHorarioTableWrap" style="overflow-x:auto;margin-bottom:4px"></div>
+      <div style="font-size:11px;color:var(--txt3);margin-bottom:12px">
+        Haz clic en cualquier celda para editar su contenido
+      </div>
+      <div class="m-actions">
+        <button class="btn" onclick="closeM('mHorario')">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveHorarioTabla()">💾 Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Agregar clase al día -->
+<div class="modal" id="mAddDay">
+  <div class="m-box">
+    <div class="m-head">
+      <div class="m-title" id="mAddDayTitle">Agregar clase al día</div>
+      <div class="m-close" onclick="closeM('mAddDay')">×</div>
+    </div>
+    <div class="m-body">
+      <div class="m-field"><label class="m-label">Clase</label><select class="m-input" id="addDayClass"></select></div>
+      <div class="m-field">
+        <label class="m-label">Hora (opcional)</label>
+        <input type="text" class="m-input" id="addDayTime" placeholder="Ej: 8:00 - 10:00" autocomplete="off">
+      </div>
+      <div class="m-actions">
+        <button class="btn" onclick="closeM('mAddDay')">Cancelar</button>
+        <button class="btn btn-b" onclick="saveAddDay()">✓ Agregar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nueva División -->
+<div class="modal" id="mDivision">
+  <div class="m-box">
+    <div class="m-head">
+      <div class="m-title">📅 Nueva División</div>
+      <div class="m-close" onclick="closeM('mDivision')">×</div>
+    </div>
+    <div class="m-body">
+      <div class="m-field">
+        <label class="m-label">Nombre</label>
+        <input type="text" class="m-input" id="mDN" placeholder="Ej: Semana 1" autocomplete="off">
+      </div>
+      <div class="m-field">
+        <label class="m-label">Filas del horario (horas)</label>
+        <input type="number" id="mDScheduleRows" class="m-input" value="6" min="1" max="20">
+      </div>
+      <div class="m-field">
+        <label class="m-label">Color</label>
+        <div class="m-color-picker">
+          <div class="cdot on" style="background:#c79a38" data-c="#c79a38" onclick="pickC(this)"></div>
+          <div class="cdot"    style="background:#2868cc" data-c="#2868cc" onclick="pickC(this)"></div>
+          <div class="cdot"    style="background:#28985e" data-c="#28985e" onclick="pickC(this)"></div>
+          <div class="cdot"    style="background:#7240cc" data-c="#7240cc" onclick="pickC(this)"></div>
+          <div class="cdot"    style="background:#c06020" data-c="#c06020" onclick="pickC(this)"></div>
+          <div class="cdot"    style="background:#b83050" data-c="#b83050" onclick="pickC(this)"></div>
+          <div class="cdot"    style="background:#20a0c0" data-c="#20a0c0" onclick="pickC(this)"></div>
+        </div>
+      </div>
+      <div class="m-actions">
+        <button class="btn" onclick="closeM('mDivision')">Cancelar</button>
+        <button class="btn btn-gold" onclick="saveDivision()">✓ Crear División</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nueva Semana -->
+<div class="modal" id="mWeek">
+  <div class="m-box">
+    <div class="m-head">
+      <div class="m-title">📅 Nueva Semana</div>
+      <div class="m-close" onclick="closeM('mWeek')">×</div>
+    </div>
+    <div class="m-body">
+      <div class="m-field">
+        <label class="m-label">Título (ej: Semana 1)</label>
+        <input type="text" class="m-input" id="weekTitle" placeholder="Semana 1" autocomplete="off">
+      </div>
+      <div class="m-actions">
+        <button class="btn" onclick="closeM('mWeek')">Cancelar</button>
+        <button class="btn btn-gold" onclick="saveWeek()">✓ Crear</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nuevo Bloque -->
+<div class="modal" id="mBloque">
+  <div class="m-box">
+    <div class="m-head">
+      <div class="m-title">📄 Nuevo Bloque</div>
+      <div class="m-close" onclick="closeM('mBloque')">×</div>
+    </div>
+    <div class="m-body">
+      <div class="m-field">
+        <label class="m-label">Título del bloque</label>
+        <input type="text" class="m-input" id="mBloqueTitle"
+          placeholder="Ej: Introducción, Conceptos clave..." autocomplete="off">
+      </div>
+      <div class="m-actions">
+        <button class="btn" onclick="closeM('mBloque')">Cancelar</button>
+        <button class="btn btn-gold" onclick="saveBloqueModal()">✓ Crear Bloque</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Renombrar Semana -->
+<div class="modal" id="mRenWeek">
+  <div class="m-box">
+    <div class="m-head">
+      <div class="m-title">✏️ Renombrar Semana</div>
+      <div class="m-close" onclick="closeM('mRenWeek')">×</div>
+    </div>
+    <div class="m-body">
+      <div class="m-field">
+        <label class="m-label">Nuevo nombre</label>
+        <input type="text" class="m-input" id="renWeekTitle" placeholder="Semana 1" autocomplete="off">
+      </div>
+      <div class="m-actions">
+        <button class="btn" onclick="closeM('mRenWeek')">Cancelar</button>
+        <button class="btn btn-gold" onclick="saveRenWeek()">✓ Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nueva Clase en División -->
+<div class="modal" id="mDivClass">
+  <div class="m-box">
+    <div class="m-head">
+      <div class="m-title">📘 Nueva Clase en División</div>
+      <div class="m-close" onclick="closeM('mDivClass')">×</div>
+    </div>
+    <div class="m-body">
+      <div class="m-field">
+        <label class="m-label">Nombre de la clase</label>
+        <input type="text" class="m-input" id="mDivClassName" placeholder="Ej: Álgebra, Historia..." autocomplete="off">
+      </div>
+      <div class="m-field">
+        <label class="m-label">Color</label>
+        <div class="m-color-picker">
+          <div class="cdot on" style="background:#c79a38" data-c="#c79a38" onclick="pickC(this)"></div>
+          <div class="cdot"    style="background:#2868cc" data-c="#2868cc" onclick="pickC(this)"></div>
+          <div class="cdot"    style="background:#28985e" data-c="#28985e" onclick="pickC(this)"></div>
+          <div class="cdot"    style="background:#7240cc" data-c="#7240cc" onclick="pickC(this)"></div>
+          <div class="cdot"    style="background:#c06020" data-c="#c06020" onclick="pickC(this)"></div>
+          <div class="cdot"    style="background:#b83050" data-c="#b83050" onclick="pickC(this)"></div>
+          <div class="cdot"    style="background:#20a0c0" data-c="#20a0c0" onclick="pickC(this)"></div>
+        </div>
+      </div>
+      <div class="m-actions">
+        <button class="btn" onclick="closeM('mDivClass')">Cancelar</button>
+        <button class="btn btn-gold" onclick="saveDivClassModal()">✓ Crear Clase</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     FIREBASE AUTH PANEL
+══════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════
+     FIREBASE AUTH PANEL
+══════════════════════════════════════════ -->
+<div id="fbAuthOverlay"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:5000;align-items:center;justify-content:center">
+  <div style="background:var(--panel);border:1px solid var(--brd);border-radius:var(--r);padding:28px 32px;width:360px;max-width:94vw;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);animation:fadeUp .28s cubic-bezier(.22,1,.36,1)">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="font-size:22px">☁️</div>
+        <div>
+          <div style="font-family:var(--fd);font-size:18px;font-weight:700;color:var(--txt)">Sincronización</div>
+          <div style="font-size:11px;color:var(--txt3)">CÓDICE Cloud — Firebase</div>
+        </div>
+      </div>
+      <div onclick="toggleAuthPanel()" style="cursor:pointer;width:28px;height:28px;border-radius:6px;background:var(--card);border:1px solid var(--brd);display:flex;align-items:center;justify-content:center;color:var(--txt3);font-size:16px;transition:all .15s"
+        onmouseover="this.style.background='var(--redBg)';this.style.color='var(--redL)'"
+        onmouseout="this.style.background='var(--card)';this.style.color='var(--txt3)'">×</div>
+    </div>
+
+    <!-- Panel: SIN FIREBASE CONFIGURADO -->
+    <div id="fbPanelSetup" style="display:none">
+      <div style="background:var(--goldBg);border:1px solid var(--goldBd);border-radius:var(--rs);padding:14px;margin-bottom:18px">
+        <div style="font-weight:700;color:var(--goldL);font-size:13px;margin-bottom:8px">⚙️ Firebase no configurado</div>
+        <div style="font-size:12px;color:var(--txt2);line-height:1.7">
+          Para activar la sincronización, edita el archivo <code style="color:var(--goldL);background:var(--card);padding:1px 5px;border-radius:3px">firebase-sync.js</code>
+          y reemplaza <code style="color:var(--goldL)">FIREBASE_CONFIG</code> con las credenciales de tu proyecto Firebase.
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--txt2);line-height:1.9;margin-bottom:16px">
+        <strong style="color:var(--txt)">Pasos rápidos:</strong><br>
+        1. Ve a <a href="https://console.firebase.google.com" target="_blank" style="color:var(--blueL)">console.firebase.google.com</a><br>
+        2. Crea un proyecto → Agrega app Web<br>
+        3. Copia el <code>firebaseConfig</code> en <code>firebase-sync.js</code><br>
+        4. Activa <strong>Authentication</strong> (Email + Anónimo)<br>
+        5. Activa <strong>Firestore Database</strong>
+      </div>
+      <div style="background:var(--card2);border:1px solid var(--brd);border-radius:var(--rs);padding:10px 12px;font-size:11px;color:var(--txt3);margin-bottom:16px">
+        💡 Mientras tanto, tus datos se guardan con <strong style="color:var(--txt)">💾 Guardar</strong> de forma local (localStorage + archivo HTML).
+      </div>
+      <button class="btn" style="width:100%" onclick="toggleAuthPanel()">Entendido</button>
+    </div>
+
+    <!-- Panel: INICIO DE SESIÓN -->
+    <div id="fbPanelLogin">
+      <div style="font-size:13px;color:var(--txt2);margin-bottom:18px;line-height:1.6">
+        Inicia sesión para sincronizar tus datos entre tu laptop, celular y cualquier dispositivo automáticamente.
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:11px;text-transform:uppercase;letter-spacing:.8px;font-weight:800;color:var(--txt3);display:block;margin-bottom:6px">Correo electrónico</label>
+        <input type="email" id="fbEmail" class="m-input" placeholder="tu@correo.com" autocomplete="email"
+          style="background:var(--card2)"
+          onkeydown="if(event.key==='Enter')document.getElementById('fbPass').focus()">
+      </div>
+      <div style="margin-bottom:16px">
+        <label style="font-size:11px;text-transform:uppercase;letter-spacing:.8px;font-weight:800;color:var(--txt3);display:block;margin-bottom:6px">Contraseña</label>
+        <input type="password" id="fbPass" class="m-input" placeholder="••••••••" autocomplete="current-password"
+          style="background:var(--card2)"
+          onkeydown="if(event.key==='Enter')fbLogin()">
+      </div>
+      <div id="fbAuthErr" style="display:none;font-size:12px;color:var(--redL);background:var(--redBg);border:1px solid var(--redBd);border-radius:var(--rs);padding:9px 13px;margin-bottom:14px;line-height:1.5"></div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button id="fbLoginBtn" class="btn btn-primary" style="flex:1" onclick="fbLogin()">Iniciar sesión</button>
+        <button id="fbRegisterBtn" class="btn btn-gold" style="flex:1" onclick="fbRegister()">Crear cuenta</button>
+      </div>
+      <div style="border-top:1px solid var(--brd);padding-top:12px">
+        <button class="btn" style="width:100%;font-size:12px;color:var(--txt3);justify-content:center" onclick="fbAnonLogin()">
+          👻 Continuar sin cuenta (sesión anónima)
+        </button>
+        <div style="font-size:11px;color:var(--txt4);text-align:center;margin-top:8px">
+          La sesión anónima sincroniza solo en este navegador
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel: SESIÓN ACTIVA -->
+    <div id="fbPanelUser" style="display:none">
+      <div style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--gnBg);border:1px solid var(--gnBd);border-radius:var(--rs);margin-bottom:18px">
+        <div style="font-size:24px">✓</div>
+        <div>
+          <div style="font-weight:700;color:var(--greenL);font-size:14px">Sincronización activa</div>
+          <div id="fbUserEmail" style="font-size:12px;color:var(--txt2);margin-top:2px"></div>
+        </div>
+      </div>
+      <div id="fbSyncInfo" style="font-size:12px;color:var(--txt3);margin-bottom:16px;padding:10px 12px;background:var(--card2);border-radius:var(--rs);line-height:1.9"></div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <button class="btn btn-g" style="flex:1;justify-content:center" onclick="fbForcePush()">⬆️ Subir todo</button>
+        <button class="btn btn-b" style="flex:1;justify-content:center" onclick="fbForcePull()">⬇️ Descargar</button>
+      </div>
+      <div style="font-size:11px;color:var(--txt4);text-align:center;margin-bottom:14px">
+        Los datos se sincronizan automáticamente al guardar
+      </div>
+      <button class="btn btn-r" style="width:100%;justify-content:center" onclick="fbLogout()">Cerrar sesión</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     DATOS EMBEBIDOS (auto-guardado offline)
+══════════════════════════════════════════ -->
+<!--SAVEDATA_START-->
+<!--SAVEDATA_END-->
+
+
+
+<!-- ══════════════════════════════════════════
+     SCRIPTS — Orden exacto requerido
+     storage → modules → router →
+     views → ai files → quiz-engine → init
+══════════════════════════════════════════ -->
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import { getDatabase, ref, set, get, onValue, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+  window._firebaseModules = { initializeApp, getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously, onAuthStateChanged, signOut, getDatabase, ref, set, get, onValue, off };
+  window.dispatchEvent(new Event('firebaseReady'));
+</script>
+<!-- CORE -->
+<script src="js/core/storage.js"></script>
+<script src="js/core/modules.js"></script>
+<script src="js/core/router.js"></script>
+
+<!-- VIEWS -->
+<script src="js/views/dashboard.js"></script>
+<script src="js/views/clases.js"></script>
+<script src="js/views/horario.js"></script>
+<script src="js/views/progress.js"></script>
+<script src="js/views/examenes.js"></script>
+
+<!-- AI -->
+<script src="js/ai/ai-engine.js"></script>
+<script src="js/ai/ai-parser.js"></script>
+<script src="js/ai/ai-ui.js"></script>
+<script src="js/ai/ai-memory.js"></script>
+<script src="js/core/firebase-sync.js"></script>
+
+<!-- QUIZ ENGINE -->
+<script src="js/quiz-engine.js"></script>
+
+<!-- ══ INIT ══ -->
+<script>
+/* ── CÓDICE INIT ── */
+document.addEventListener('DOMContentLoaded', function() {
+  // Inicializar Mermaid
+  if (typeof mermaid !== 'undefined') {
+    mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose' });
+  }
+
+  // UI del setup modal de IA
+  if (typeof enhanceAISetupModalStyle === 'function') enhanceAISetupModalStyle();
+  if (typeof initializeAIUI          === 'function') initializeAIUI();
+
+  // Migrar datos legacy si los hay
+  if (typeof migrateOld === 'function') migrateOld();
+  // Cargar datos embebidos (backup)
+  if (typeof loadEmbedded === 'function') loadEmbedded();
+
+  setTimeout(function() {
+    // Memoria IA y CAI engine
+    if (typeof initAIMemory   === 'function') initAIMemory();
+    if (typeof initCodeAI     === 'function') initCodeAI();
+
+    // Panel de conversaciones
+    if (typeof convInjectStyles === 'function') convInjectStyles();
+
+    // Tema guardado
+    if (typeof loadTheme === 'function') loadTheme();
+
+    // Verificar si hay módulo activo y cargarlo
+    const activeMod = (typeof getActiveModule === 'function') ? getActiveModule() : null;
+    if (activeMod) {
+      CURRENT_MODULE = activeMod;
+      const ms = document.getElementById('moduleSelector');
+      const ac = document.getElementById('appContainer');
+      if (ms) ms.style.display = 'none';
+      if (ac) ac.classList.remove('hidden');
+      if (typeof initApp === 'function') initApp();
+      if (typeof go === 'function') go('home');
+    } else {
+      // Mostrar selector de módulos
+      const ms = document.getElementById('moduleSelector');
+      const ac = document.getElementById('appContainer');
+      if (ms) ms.style.display = '';
+      if (ac) ac.classList.add('hidden');
+      if (typeof renderModuleGrid === 'function') renderModuleGrid();
+    }
+    
+    // Iniciar Firebase si está configurado
+    if (typeof initFirebase === 'function') {
+      setTimeout(initFirebase, 200);
+    }
+  }, 80);
+});
+</script>
+
+</body>
+</html>
